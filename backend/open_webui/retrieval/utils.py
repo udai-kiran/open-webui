@@ -248,7 +248,7 @@ def get_embedding_function(
 ):
     if embedding_engine == "":
         return lambda query: embedding_function.encode(query).tolist()
-    elif embedding_engine in ["ollama", "openai"]:
+    elif embedding_engine in ["ollama", "openai", "nvidia"]:
         func = lambda query: generate_embeddings(
             engine=embedding_engine,
             model=embedding_model,
@@ -453,6 +453,47 @@ def generate_ollama_batch_embeddings(
         print(e)
         return None
 
+def generate_nvidia_batch_embeddings(
+    model: str, texts: list[str], url: str, key: str = ""
+) -> Optional[list[list[float]]]:
+    """ Function to get the embeddings from Nemo MS using REST API"""
+
+    headers = {"accept": "application/json", "Content-Type": "application/json"}
+    data = {}
+    if texts:
+        data["input"] = texts
+
+    if not data["input"]:
+        raise "Something went wrong :/"
+
+    if model:
+        data["model"] = model
+
+    data["input_type"] = "query"
+    data["encoding_format"] = "float"
+    data["truncate"] = "END"
+
+    r = None
+    request_timeout = int(10)
+
+    try:
+        r = requests.post(
+            url,
+            headers=headers,
+            data=json.dumps(data),
+            timeout=request_timeout,
+            # json={"input": texts, "model": model},
+        )
+        r.raise_for_status()
+        response = r.json()
+        
+        if "data" in response:
+            return [elem["embedding"] for elem in response["data"]]
+        else:
+            raise "Something went wrong :/"
+    except Exception as e:
+        print(e)
+        return None
 
 def generate_embeddings(engine: str, model: str, text: Union[str, list[str]], **kwargs):
     url = kwargs.get("url", "")
@@ -473,7 +514,11 @@ def generate_embeddings(engine: str, model: str, text: Union[str, list[str]], **
             embeddings = generate_openai_batch_embeddings(model, text, url, key)
         else:
             embeddings = generate_openai_batch_embeddings(model, [text], url, key)
-
+    elif engine == "nvidia":
+        if isinstance(text, list):
+            embeddings = generate_nvidia_batch_embeddings(model, text, url, key)
+        else:
+            embeddings = generate_nvidia_batch_embeddings(model, [text], url, key)
         return embeddings[0] if isinstance(text, str) else embeddings
 
 
