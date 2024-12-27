@@ -100,6 +100,7 @@ RUN if [ $UID -ne 0 ]; then \
     fi
 
 RUN mkdir -p $HOME/.cache/chroma
+RUN mkdir -p /app/backend/data
 RUN echo -n 00000000-0000-0000-0000-000000000000 > $HOME/.cache/chroma/telemetry_user_id
 
 # Make sure the user has access to the app and root directory
