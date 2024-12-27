@@ -763,12 +763,12 @@ def save_docs_to_vector_db(
             request.app.state.ef,
             (
                 request.app.state.config.RAG_OPENAI_API_BASE_URL
-                if request.app.state.config.RAG_EMBEDDING_ENGINE == "openai"
+                if request.app.state.config.RAG_EMBEDDING_ENGINE in ["openai", "nvidia"]
                 else request.app.state.config.RAG_OLLAMA_BASE_URL
             ),
             (
                 request.app.state.config.RAG_OPENAI_API_KEY
-                if request.app.state.config.RAG_EMBEDDING_ENGINE == "openai"
+                if request.app.state.config.RAG_EMBEDDING_ENGINE in ["openai", "nvidia"]
                 else request.app.state.config.RAG_OLLAMA_API_KEY
             ),
             request.app.state.config.RAG_EMBEDDING_BATCH_SIZE,
