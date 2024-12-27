@@ -5,6 +5,7 @@ from typing import Optional, Union
 
 import asyncio
 import requests
+import _json
 
 from huggingface_hub import snapshot_download
 from langchain.retrievers import ContextualCompressionRetriever, EnsembleRetriever
