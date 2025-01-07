@@ -475,7 +475,7 @@ def generate_nvidia_batch_embeddings(
 
     data["input_type"] = "query"
     data["encoding_format"] = "float"
-    data["truncate"] = "END"
+    # data["truncate"] = "END"
 
     r = None
     request_timeout = int(10)
