@@ -51,7 +51,7 @@ class PgvectorClient:
                 PGVECTOR_DB_URL, pool_pre_ping=True, poolclass=NullPool
             )
             SessionLocal = sessionmaker(
-                autocommit=False, autoflush=false, bind=engine, expire_on_commit=False
+                autocommit=False, autoflush=False, bind=engine, expire_on_commit=False
             )
             self.session = scoped_session(SessionLocal)
 
