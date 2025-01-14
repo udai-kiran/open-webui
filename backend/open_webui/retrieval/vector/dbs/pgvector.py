@@ -51,7 +51,7 @@ class PgvectorClient:
                 PGVECTOR_DB_URL, pool_pre_ping=True, poolclass=NullPool
             )
             SessionLocal = sessionmaker(
-                autocommit=False, autoflush=True, bind=engine, expire_on_commit=False
+                autocommit=False, autoflush=false, bind=engine, expire_on_commit=False
             )
             self.session = scoped_session(SessionLocal)
 
@@ -359,7 +359,6 @@ class PgvectorClient:
             self.session.commit()
             print(f"Deleted {deleted} items from collection '{collection_name}'.")
         except Exception as e:
-            self.session.rollback()
             print(f"Error during delete: {e}")
             raise
 
