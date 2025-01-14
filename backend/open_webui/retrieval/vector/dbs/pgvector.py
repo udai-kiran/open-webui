@@ -51,7 +51,7 @@ class PgvectorClient:
                 PGVECTOR_DB_URL, pool_pre_ping=True, poolclass=NullPool
             )
             SessionLocal = sessionmaker(
-                autocommit=False, autoflush=False, bind=engine, expire_on_commit=False
+                autocommit=False, autoflush=True, bind=engine, expire_on_commit=False
             )
             self.session = scoped_session(SessionLocal)
 
@@ -278,6 +278,7 @@ class PgvectorClient:
                 ids=ids, distances=distances, documents=documents, metadatas=metadatas
             )
         except Exception as e:
+            self.session.rollback()
             print(f"Error during search: {e}")
             return None
 
