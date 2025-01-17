@@ -252,6 +252,7 @@ class PgvectorClient:
             )
 
             result_proxy = self.session.execute(stmt)
+            self.session.commit()
             results = result_proxy.all()
 
             ids = [[] for _ in range(num_queries)]
