@@ -129,7 +129,7 @@
 				url: OpenAIUrl
 			}
 		}).catch(async (error) => {
-			toast.error(error);
+			toast.error(`${error}`);
 			await setEmbeddingConfig();
 			return null;
 		});
@@ -152,7 +152,7 @@
 		const res = await updateRerankingConfig(localStorage.token, {
 			reranking_model: rerankingModel
 		}).catch(async (error) => {
-			toast.error(error);
+			toast.error(`${error}`);
 			await setRerankingConfig();
 			return null;
 		});
@@ -268,7 +268,7 @@
 	bind:show={showResetUploadDirConfirm}
 	on:confirm={async () => {
 		const res = await deleteAllFiles(localStorage.token).catch((error) => {
-			toast.error(error);
+			toast.error(`${error}`);
 			return null;
 		});
 
@@ -282,7 +282,7 @@
 	bind:show={showResetConfirm}
 	on:confirm={() => {
 		const res = resetVectorDB(localStorage.token).catch((error) => {
-			toast.error(error);
+			toast.error(`${error}`);
 			return null;
 		});
 
