@@ -858,7 +858,7 @@ def save_docs_to_vector_db(
         items = [
             {
                 "id": str(uuid.uuid4()),
-                "text": text,
+                "text": " ".join(texts[max(0, idx - 1) : min(len(texts), idx + 2)]),
                 "vector": embeddings[idx],
                 "metadata": metadatas[idx],
             }
