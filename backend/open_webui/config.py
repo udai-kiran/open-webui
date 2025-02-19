@@ -1516,7 +1516,7 @@ if VECTOR_DB == "pgvector" and not PGVECTOR_DB_URL.startswith("postgres"):
         "Pgvector requires setting PGVECTOR_DB_URL or using Postgres with vector extension as the primary database."
     )
 PGVECTOR_INITIALIZE_MAX_VECTOR_LENGTH = int(
-    os.environ.get("PGVECTOR_INITIALIZE_MAX_VECTOR_LENGTH", "2048")
+    os.environ.get("PGVECTOR_INITIALIZE_MAX_VECTOR_LENGTH", "1500")
 )
 
 ####################################
