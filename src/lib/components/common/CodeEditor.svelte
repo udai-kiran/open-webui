@@ -6,7 +6,7 @@
 	import { acceptCompletion } from '@codemirror/autocomplete';
 	import { indentWithTab } from '@codemirror/commands';
 
-	import { indentUnit } from '@codemirror/language';
+	import { indentUnit, LanguageDescription } from '@codemirror/language';
 	import { languages } from '@codemirror/language-data';
 
 	import { oneDark } from '@codemirror/theme-one-dark';
@@ -47,6 +47,15 @@
 	let editorTheme = new Compartment();
 	let editorLanguage = new Compartment();
 
+	languages.push(
+		LanguageDescription.of({
+			name: 'HCL',
+			extensions: ['hcl', 'tf'],
+			load() {
+				return import('codemirror-lang-hcl').then((m) => m.hcl());
+			}
+		})
+	);
 	const getLang = async () => {
 		const language = languages.find((l) => l.alias.includes(lang));
 		return await language?.load();
@@ -54,8 +63,8 @@
 
 	export const formatPythonCodeHandler = async () => {
 		if (codeEditor) {
-			const res = await formatPythonCode(_value).catch((error) => {
-				toast.error(error);
+			const res = await formatPythonCode(localStorage.token, _value).catch((error) => {
+				toast.error(`${error}`);
 				return null;
 			});
 
