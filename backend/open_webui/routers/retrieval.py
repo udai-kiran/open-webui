@@ -27,6 +27,7 @@ import tiktoken
 
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter, TokenTextSplitter
+from langchain_text_splitters.sentence_transformers import SentenceTransformersTokenTextSplitter
 from langchain_core.documents import Document
 
 from open_webui.models.files import FileModel, Files
@@ -77,6 +78,7 @@ from open_webui.utils.auth import get_admin_user, get_verified_user
 
 from open_webui.config import (
     ENV,
+    RAG_EMBEDDING_MODEL,
     RAG_EMBEDDING_MODEL_AUTO_UPDATE,
     RAG_EMBEDDING_MODEL_TRUST_REMOTE_CODE,
     RAG_RERANKING_MODEL_AUTO_UPDATE,
@@ -747,15 +749,20 @@ def save_docs_to_vector_db(
             )
         elif request.app.state.config.TEXT_SPLITTER == "token":
             log.info(
-                f"Using token text splitter: {request.app.state.config.TIKTOKEN_ENCODING_NAME}"
+                f"Using token text splitter: {RAG_EMBEDDING_MODEL}"
             )
 
-            tiktoken.get_encoding(str(request.app.state.config.TIKTOKEN_ENCODING_NAME))
-            text_splitter = TokenTextSplitter(
-                encoding_name=str(request.app.state.config.TIKTOKEN_ENCODING_NAME),
-                chunk_size=request.app.state.config.CHUNK_SIZE,
+            # tiktoken.get_encoding(str(request.app.state.config.TIKTOKEN_ENCODING_NAME))
+            # text_splitter = TokenTextSplitter(
+            #     encoding_name=str(request.app.state.config.TIKTOKEN_ENCODING_NAME),
+            #     chunk_size=request.app.state.config.CHUNK_SIZE,
+            #     chunk_overlap=request.app.state.config.CHUNK_OVERLAP,
+            #     add_start_index=True,
+            # )
+            text_splitter = SentenceTransformersTokenTextSplitter(
+                model_name=str(RAG_EMBEDDING_MODEL),
+                tokens_per_chunk=request.app.state.config.CHUNK_SIZE,
                 chunk_overlap=request.app.state.config.CHUNK_OVERLAP,
-                add_start_index=True,
             )
         else:
             raise ValueError(ERROR_MESSAGES.DEFAULT("Invalid text splitter"))
@@ -806,7 +813,8 @@ def save_docs_to_vector_db(
 
         log.info(f"adding to collection {collection_name}")
         embedding_function = get_embedding_function(
-            request.app.state.config.RAG_EMBEDDING_ENGINE,
+            # request.app.state.config.RAG_EMBEDDING_ENGINE,
+            "dkubex",
             request.app.state.config.RAG_EMBEDDING_MODEL,
             request.app.state.ef,
             (
@@ -829,7 +837,7 @@ def save_docs_to_vector_db(
         items = [
             {
                 "id": str(uuid.uuid4()),
-                "text": text,
+                "text": " ".join(texts[max(0, idx - 1) : min(len(texts), idx + 2)]),
                 "vector": embeddings[idx],
                 "metadata": metadatas[idx],
             }

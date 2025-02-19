@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import tiktoken
 
+from langchain_text_splitters.sentence_transformers import SentenceTransformersTokenTextSplitter
 
 from open_webui.storage.provider import Storage
 from open_webui.apps.webui.models.knowledge import Knowledges
@@ -778,17 +779,23 @@ def save_docs_to_vector_db(
                 chunk_overlap=app.state.config.CHUNK_OVERLAP,
                 add_start_index=True,
             )
-        elif app.state.config.TEXT_SPLITTER == "token":
-            log.info(
-                f"Using token text splitter: {app.state.config.TIKTOKEN_ENCODING_NAME}"
-            )
+        # elif app.state.config.TEXT_SPLITTER == "token":
+        #     log.info(
+        #         f"Using token text splitter: {app.state.config.TIKTOKEN_ENCODING_NAME}"
+        #     )
 
-            tiktoken.get_encoding(str(app.state.config.TIKTOKEN_ENCODING_NAME))
-            text_splitter = TokenTextSplitter(
-                encoding_name=str(app.state.config.TIKTOKEN_ENCODING_NAME),
-                chunk_size=app.state.config.CHUNK_SIZE,
+        #     tiktoken.get_encoding(str(app.state.config.TIKTOKEN_ENCODING_NAME))
+        #     text_splitter = TokenTextSplitter(
+        #         encoding_name=str(app.state.config.TIKTOKEN_ENCODING_NAME),
+        #         chunk_size=app.state.config.CHUNK_SIZE,
+        #         chunk_overlap=app.state.config.CHUNK_OVERLAP,
+        #         add_start_index=True,
+        #     )
+        elif app.state.config.TEXT_SPLITTER == "token":
+            text_splitter = SentenceTransformersTokenTextSplitter(
+                model_name=RAG_EMBEDDING_MODEL,
+                tokens_per_chunk=app.state.config.CHUNK_SIZE,
                 chunk_overlap=app.state.config.CHUNK_OVERLAP,
-                add_start_index=True,
             )
         else:
             raise ValueError(ERROR_MESSAGES.DEFAULT("Invalid text splitter"))

@@ -254,6 +254,46 @@ def query_collection_with_hybrid_search(
         return merge_and_sort_query_results(results, k=k, reverse=True)
 
 
+def get_dkubex_embeddings(query: str, user=""):
+    """Function to get the embeddings from Dkubex using Text Embeddings Inference API"""
+    url = os.getenv("DKUBEX_URL")
+    authorization_token = os.getenv("DKUBEX_KEY")
+    MAX_BATCH_SIZE = 32  # Maximum allowed batch size for the API
+
+    headers = {
+        "Authorization": authorization_token,
+        "Content-Type": "application/json",
+    }
+
+    if isinstance(query, list):
+        # Handle batching for list inputs
+        all_embeddings = []
+        for i in range(0, len(query), MAX_BATCH_SIZE):
+            batch = query[i:i + MAX_BATCH_SIZE]
+            data = {"inputs": batch}
+            
+            r = requests.post(
+                f"{url}/embed",
+                headers=headers,
+                json=data,
+                timeout=10,
+            )
+            r.raise_for_status()
+            all_embeddings.extend(r.json())
+        return all_embeddings
+    else:
+        # Handle single input
+        data = {"inputs": [query]}
+        r = requests.post(
+            f"{url}/embed",
+            headers=headers,
+            json=data,
+            timeout=10,
+            verify=False,
+        )
+        r.raise_for_status()
+        return r.json()[0]
+
 def get_embedding_function(
     embedding_engine,
     embedding_model,
@@ -264,15 +304,18 @@ def get_embedding_function(
 ):
     if embedding_engine == "":
         return lambda query, user=None: embedding_function.encode(query).tolist()
+    elif embedding_engine == "dkubex":
+        return get_dkubex_embeddings
     elif embedding_engine in ["ollama", "openai", "nvidia"]:
-        func = lambda query, user=None: generate_embeddings(
-            engine=embedding_engine,
-            model=embedding_model,
-            text=query,
-            url=url,
-            key=key,
-            user=user,
-        )
+        def func(query, user=None):
+            return generate_embeddings(
+                engine=embedding_engine,
+                model=embedding_model,
+                text=query,
+                url=url,
+                key=key,
+                user=user,
+            )
 
         def generate_multiple(query, user, func):
             if isinstance(query, list):
@@ -576,9 +619,9 @@ def generate_embeddings(engine: str, model: str, text: Union[str, list[str]], **
             embeddings = generate_openai_batch_embeddings(model, [text], url, key, user)
     elif engine == "nvidia":
         if isinstance(text, list):
-            embeddings = generate_nvidia_batch_embeddings(model, text, url, key)
+            embeddings = generate_nvidia_batch_embeddings(model, text, url, key, user)
         else:
-            embeddings = generate_nvidia_batch_embeddings(model, [text], url, key)
+            embeddings = generate_nvidia_batch_embeddings(model, [text], url, key, user)
 
 
         return embeddings[0] if isinstance(text, str) else embeddings
