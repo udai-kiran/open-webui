@@ -1472,6 +1472,7 @@ Ensure that the tools are effectively utilized to achieve the highest-quality an
 ####################################
 
 VECTOR_DB = os.environ.get("VECTOR_DB", "chroma")
+print(f"VECTOR_DB: {VECTOR_DB}")
 
 # Chroma
 CHROMA_DATA_PATH = f"{DATA_DIR}/vector_db"
@@ -1600,7 +1601,7 @@ ENABLE_RAG_WEB_LOADER_SSL_VERIFICATION = PersistentConfig(
 RAG_EMBEDDING_ENGINE = PersistentConfig(
     "RAG_EMBEDDING_ENGINE",
     "rag.embedding_engine",
-    os.environ.get("RAG_EMBEDDING_ENGINE", ""),
+    os.environ.get("RAG_EMBEDDING_ENGINE", "dkubex"),
 )
 
 PDF_EXTRACT_IMAGES = PersistentConfig(

@@ -813,8 +813,7 @@ def save_docs_to_vector_db(
 
         log.info(f"adding to collection {collection_name}")
         embedding_function = get_embedding_function(
-            # request.app.state.config.RAG_EMBEDDING_ENGINE,
-            "dkubex",
+            request.app.state.config.RAG_EMBEDDING_ENGINE,
             request.app.state.config.RAG_EMBEDDING_MODEL,
             request.app.state.ef,
             (
