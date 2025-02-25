@@ -1431,6 +1431,12 @@ PDF_EXTRACT_IMAGES = PersistentConfig(
     os.environ.get("PDF_EXTRACT_IMAGES", "False").lower() == "true",
 )
 
+ADD_ADDITIONAL_CONTEXT = PersistentConfig(
+    "ADD_ADDITIONAL_CONTEXT",
+    "rag.add_additional_context",
+    os.environ.get("ADD_ADDITIONAL_CONTEXT", "False").lower() == "true",
+)
+
 RAG_EMBEDDING_MODEL = PersistentConfig(
     "RAG_EMBEDDING_MODEL",
     "rag.embedding_model",

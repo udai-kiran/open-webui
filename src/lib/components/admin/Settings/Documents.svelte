@@ -55,6 +55,7 @@
 	let chunkSize = 0;
 	let chunkOverlap = 0;
 	let pdfExtractImages = true;
+	let addAdditionalContext = true;
 
 	let enableGoogleDriveIntegration = false;
 
@@ -188,6 +189,7 @@
 		const res = await updateRAGConfig(localStorage.token, {
 			pdf_extract_images: pdfExtractImages,
 			enable_google_drive_integration: enableGoogleDriveIntegration,
+			add_additional_context: addAdditionalContext,
 			file: {
 				max_size: fileMaxSize === '' ? null : fileMaxSize,
 				max_count: fileMaxCount === '' ? null : fileMaxCount
@@ -247,6 +249,7 @@
 
 		if (res) {
 			pdfExtractImages = res.pdf_extract_images;
+			addAdditionalContext = res.add_additional_context;
 
 			textSplitter = res.chunk.text_splitter;
 			chunkSize = res.chunk.chunk_size;
@@ -694,6 +697,9 @@
 					>
 						<option value="">{$i18n.t('Default')} ({$i18n.t('Character')})</option>
 						<option value="token">{$i18n.t('Token')} ({$i18n.t('Tiktoken')})</option>
+						<option value="SentenceTransformer"
+							>{$i18n.t('SentenceTransformer')} ({$i18n.t('bge-m3')})</option
+						>
 					</select>
 				</div>
 			</div>
@@ -740,6 +746,13 @@
 					<div>
 						<Switch bind:state={pdfExtractImages} />
 					</div>
+				</div>
+			</div>
+
+			<div class="flex justify-between items-center text-xs">
+				<div class="text-xs font-medium">{$i18n.t('Add additional context')}</div>
+				<div>
+					<Switch bind:state={addAdditionalContext} />
 				</div>
 			</div>
 		</div>

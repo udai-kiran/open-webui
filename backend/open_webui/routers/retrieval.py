@@ -25,7 +25,7 @@ from pydantic import BaseModel
 import tiktoken
 
 
-from langchain.text_splitter import RecursiveCharacterTextSplitter, TokenTextSplitter
+from langchain.text_splitter import RecursiveCharacterTextSplitter, TokenTextSplitter, SentenceTransformersTokenTextSplitter
 from langchain_core.documents import Document
 
 from open_webui.models.files import FileModel, Files
@@ -347,6 +347,7 @@ async def get_rag_config(request: Request, user=Depends(get_admin_user)):
     return {
         "status": True,
         "pdf_extract_images": request.app.state.config.PDF_EXTRACT_IMAGES,
+        "add_additional_context": request.app.state.config.ADD_ADDITIONAL_CONTEXT,
         "enable_google_drive_integration": request.app.state.config.ENABLE_GOOGLE_DRIVE_INTEGRATION,
         "content_extraction": {
             "engine": request.app.state.config.CONTENT_EXTRACTION_ENGINE,
@@ -447,6 +448,7 @@ class WebConfig(BaseModel):
 
 class ConfigUpdateForm(BaseModel):
     pdf_extract_images: Optional[bool] = None
+    add_additional_context: Optional[bool] = None
     enable_google_drive_integration: Optional[bool] = None
     file: Optional[FileConfig] = None
     content_extraction: Optional[ContentExtractionConfig] = None
@@ -463,6 +465,12 @@ async def update_rag_config(
         form_data.pdf_extract_images
         if form_data.pdf_extract_images is not None
         else request.app.state.config.PDF_EXTRACT_IMAGES
+    )
+
+    request.app.state.config.ADD_ADDITIONAL_CONTEXT = (
+        form_data.add_additional_context
+        if form_data.add_additional_context is not None
+        else request.app.state.config.ADD_ADDITIONAL_CONTEXT
     )
 
     request.app.state.config.ENABLE_GOOGLE_DRIVE_INTEGRATION = (
@@ -552,6 +560,7 @@ async def update_rag_config(
     return {
         "status": True,
         "pdf_extract_images": request.app.state.config.PDF_EXTRACT_IMAGES,
+        "add_additional_context": request.app.state.config.ADD_ADDITIONAL_CONTEXT,
         "file": {
             "max_size": request.app.state.config.FILE_MAX_SIZE,
             "max_count": request.app.state.config.FILE_MAX_COUNT,
@@ -713,6 +722,14 @@ def save_docs_to_vector_db(
                 chunk_overlap=request.app.state.config.CHUNK_OVERLAP,
                 add_start_index=True,
             )
+        elif request.app.state.config.TEXT_SPLITTER == "SentenceTransformer":
+            log.info("Using SentenceTransformer text splitter")
+            text_splitter = SentenceTransformersTokenTextSplitter(
+                model_name="BAAI/bge-m3",
+                chunk_size=request.app.state.config.CHUNK_SIZE,
+                chunk_overlap=request.app.state.config.CHUNK_OVERLAP,
+                add_start_index=True,
+            )
         else:
             raise ValueError(ERROR_MESSAGES.DEFAULT("Invalid text splitter"))
 
@@ -781,7 +798,7 @@ def save_docs_to_vector_db(
         items = [
             {
                 "id": str(uuid.uuid4()),
-                "text": text,
+                "text": " ".join(texts[max(0, idx - 1) : min(len(texts), idx + 2)]) if request.app.state.config.ADD_ADDITIONAL_CONTEXT else text,
                 "vector": embeddings[idx],
                 "metadata": metadatas[idx],
             }
@@ -880,6 +897,7 @@ def process_file(
                     engine=request.app.state.config.CONTENT_EXTRACTION_ENGINE,
                     TIKA_SERVER_URL=request.app.state.config.TIKA_SERVER_URL,
                     PDF_EXTRACT_IMAGES=request.app.state.config.PDF_EXTRACT_IMAGES,
+                    ADD_ADDITIONAL_CONTEXT=request.app.state.config.ADD_ADDITIONAL_CONTEXT,
                 )
                 docs = loader.load(
                     file.filename, file.meta.get("content_type"), file_path
