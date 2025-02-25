@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import tiktoken
 
+from langchain_text_splitters import SentenceTransformersTokenTextSplitter
 
 from open_webui.storage.provider import Storage
 from open_webui.apps.webui.models.knowledge import Knowledges
@@ -69,6 +70,7 @@ from open_webui.config import (
     GOOGLE_PSE_API_KEY,
     GOOGLE_PSE_ENGINE_ID,
     PDF_EXTRACT_IMAGES,
+    ADD_ADDITIONAL_CONTEXT,
     RAG_EMBEDDING_ENGINE,
     RAG_EMBEDDING_MODEL,
     RAG_EMBEDDING_MODEL_AUTO_UPDATE,
@@ -160,6 +162,7 @@ app.state.config.CHUNK_OVERLAP = CHUNK_OVERLAP
 app.state.config.RAG_EMBEDDING_ENGINE = RAG_EMBEDDING_ENGINE
 app.state.config.RAG_EMBEDDING_MODEL = RAG_EMBEDDING_MODEL
 app.state.config.RAG_EMBEDDING_BATCH_SIZE = RAG_EMBEDDING_BATCH_SIZE
+app.state.config.ADD_ADDITIONAL_CONTEXT = ADD_ADDITIONAL_CONTEXT
 app.state.config.RAG_RERANKING_MODEL = RAG_RERANKING_MODEL
 app.state.config.RAG_TEMPLATE = RAG_TEMPLATE
 
@@ -170,6 +173,7 @@ app.state.config.OLLAMA_BASE_URL = RAG_OLLAMA_BASE_URL
 app.state.config.OLLAMA_API_KEY = RAG_OLLAMA_API_KEY
 
 app.state.config.PDF_EXTRACT_IMAGES = PDF_EXTRACT_IMAGES
+app.state.config.ADD_ADDITIONAL_CONTEXT = ADD_ADDITIONAL_CONTEXT
 
 app.state.config.YOUTUBE_LOADER_LANGUAGE = YOUTUBE_LOADER_LANGUAGE
 app.state.config.YOUTUBE_LOADER_PROXY_URL = YOUTUBE_LOADER_PROXY_URL
@@ -457,6 +461,7 @@ async def get_rag_config(user=Depends(get_admin_user)):
     return {
         "status": True,
         "pdf_extract_images": app.state.config.PDF_EXTRACT_IMAGES,
+        "add_additional_context": app.state.config.ADD_ADDITIONAL_CONTEXT,
         "content_extraction": {
             "engine": app.state.config.CONTENT_EXTRACTION_ENGINE,
             "tika_server_url": app.state.config.TIKA_SERVER_URL,
@@ -553,6 +558,7 @@ class WebConfig(BaseModel):
 
 class ConfigUpdateForm(BaseModel):
     pdf_extract_images: Optional[bool] = None
+    add_additional_context: Optional[bool] = None
     file: Optional[FileConfig] = None
     content_extraction: Optional[ContentExtractionConfig] = None
     chunk: Optional[ChunkParamUpdateForm] = None
@@ -566,6 +572,12 @@ async def update_rag_config(form_data: ConfigUpdateForm, user=Depends(get_admin_
         form_data.pdf_extract_images
         if form_data.pdf_extract_images is not None
         else app.state.config.PDF_EXTRACT_IMAGES
+    )
+
+    app.state.config.ADD_ADDITIONAL_CONTEXT = (
+        form_data.add_additional_context
+        if form_data.add_additional_context is not None
+        else app.state.config.ADD_ADDITIONAL_CONTEXT
     )
 
     if form_data.file is not None:
@@ -630,6 +642,7 @@ async def update_rag_config(form_data: ConfigUpdateForm, user=Depends(get_admin_
     return {
         "status": True,
         "pdf_extract_images": app.state.config.PDF_EXTRACT_IMAGES,
+        "add_additional_context": app.state.config.ADD_ADDITIONAL_CONTEXT,
         "file": {
             "max_size": app.state.config.FILE_MAX_SIZE,
             "max_count": app.state.config.FILE_MAX_COUNT,
@@ -790,6 +803,14 @@ def save_docs_to_vector_db(
                 chunk_overlap=app.state.config.CHUNK_OVERLAP,
                 add_start_index=True,
             )
+        elif app.state.config.TEXT_SPLITTER == "SentenceTransformer":
+            log.info("Using SentenceTransformer text splitter")
+            text_splitter = SentenceTransformersTokenTextSplitter(
+                model_name="BAAI/bge-m3",
+                chunk_size=app.state.config.CHUNK_SIZE,
+                chunk_overlap=app.state.config.CHUNK_OVERLAP,
+                add_start_index=True,
+            )
         else:
             raise ValueError(ERROR_MESSAGES.DEFAULT("Invalid text splitter"))
 
@@ -858,7 +879,7 @@ def save_docs_to_vector_db(
         items = [
             {
                 "id": str(uuid.uuid4()),
-                "text": text,
+                "text": " ".join(texts[max(0, idx - 1) : min(len(texts), idx + 2)]) if app.state.config.ADD_ADDITIONAL_CONTEXT else text,
                 "vector": embeddings[idx],
                 "metadata": metadatas[idx],
             }
@@ -956,6 +977,7 @@ def process_file(
                     engine=app.state.config.CONTENT_EXTRACTION_ENGINE,
                     TIKA_SERVER_URL=app.state.config.TIKA_SERVER_URL,
                     PDF_EXTRACT_IMAGES=app.state.config.PDF_EXTRACT_IMAGES,
+                    ADD_ADDITIONAL_CONTEXT=app.state.config.ADD_ADDITIONAL_CONTEXT,
                 )
                 docs = loader.load(
                     file.filename, file.meta.get("content_type"), file_path
